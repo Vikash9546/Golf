@@ -179,7 +179,7 @@ const App = () => {
          {role === 'SUBSCRIBER' && activeTab === 'scores' && <ScoreEntryView scores={mockScores} setScores={setMockScores} />}
          {role === 'SUBSCRIBER' && activeTab === 'subscription' && <SubscriptionView />}
          {role === 'SUBSCRIBER' && activeTab === 'charity' && <CharityView />}
-         {role === 'SUBSCRIBER' && activeTab === 'profile' && <ProfileSettingsView />}
+         {role === 'SUBSCRIBER' && activeTab === 'profile' && <ProfileSettingsView user={user} setUser={setUser} />}
          
          {/* Admin Views */}
          {role === 'ADMIN' && activeTab === 'admin_dashboard' && <AdminOverview />}
@@ -591,40 +591,100 @@ const ScoreEntryView = ({ scores, setScores }) => {
     );
 };
 
-const ProfileSettingsView = () => {
+const ProfileSettingsView = ({ user, setUser }) => {
+    const [formData, setFormData] = useState({
+        first_name: user?.first_name || '',
+        last_name: user?.last_name || '',
+        golf_club: user?.golf_club || ''
+    });
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const response = await fetchWithAuth('http://localhost:5001/api/auth/profile', {
+                method: 'PATCH',
+                body: JSON.stringify(formData)
+            });
+            const updatedUser = await response.json();
+            
+            if (response.ok) {
+                setUser(updatedUser);
+                localStorage.setItem('hero_user_data', JSON.stringify(updatedUser));
+                alert('Profile updated successfully!');
+            } else {
+                alert(`Error: ${updatedUser.message}`);
+            }
+        } catch (error) {
+            alert('Failed to save profile changes.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const initials = user?.first_name && user?.last_name 
+        ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
+        : user?.email ? user.email.substring(0, 2).toUpperCase() : 'JD';
+
+    const fullName = user?.first_name && user?.last_name 
+        ? `${user.first_name} ${user.last_name}` 
+        : user?.email ? user.email.split('@')[0] : 'John Doe';
+
     return (
         <div className="max-w-4xl mx-auto animate-in fade-in duration-500">
             <h2 className="text-3xl font-premium font-bold text-white mb-8">Profile & Settings</h2>
             <div className="grid md:grid-cols-3 gap-8">
                 <div className="col-span-1 space-y-4">
                     <div className="glass-panel p-6 flex flex-col items-center text-center">
-                        <div className="w-24 h-24 bg-accent/20 rounded-full flex items-center justify-center text-accent text-3xl font-premium font-bold mb-4">
-                            JD
+                        <div className="w-24 h-24 bg-accent/20 rounded-full flex items-center justify-center text-accent text-3xl font-premium font-bold mb-4 shadow-inner border border-accent/10">
+                            {initials}
                         </div>
-                        <h3 className="font-bold text-xl">John Doe</h3>
-                        <p className="text-sm text-gray-400 mb-4">john.doe@example.com</p>
+                        <h3 className="font-bold text-xl text-white capitalize">{fullName}</h3>
+                        <p className="text-sm text-gray-400 mb-4">{user?.email}</p>
                         <div className="text-xs bg-green-500/20 text-green-400 px-3 py-1 rounded-full uppercase tracking-wider font-bold">Verified Player</div>
                     </div>
                 </div>
                 <div className="col-span-2 space-y-6">
                     <div className="glass-panel p-6 space-y-4">
-                        <h3 className="font-bold border-b border-white/10 pb-2 mb-4">Personal Information</h3>
+                        <h3 className="font-bold border-b border-white/10 pb-2 mb-4 text-white">Personal Information</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs text-gray-500 uppercase">First Name</label>
-                                <input type="text" defaultValue="John" className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 mt-1 text-white" />
+                                <label className="text-xs text-gray-500 uppercase tracking-widest font-bold">First Name</label>
+                                <input 
+                                    type="text" 
+                                    value={formData.first_name} 
+                                    onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 mt-1 text-white focus:border-accent/50 outline-none transition-colors" 
+                                />
                             </div>
                             <div>
-                                <label className="text-xs text-gray-500 uppercase">Last Name</label>
-                                <input type="text" defaultValue="Doe" className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 mt-1 text-white" />
+                                <label className="text-xs text-gray-500 uppercase tracking-widest font-bold">Last Name</label>
+                                <input 
+                                    type="text" 
+                                    value={formData.last_name} 
+                                    onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 mt-1 text-white focus:border-accent/50 outline-none transition-colors" 
+                                />
                             </div>
                             <div className="col-span-2">
-                                <label className="text-xs text-gray-500 uppercase">Home Golf Club (Optional)</label>
-                                <input type="text" placeholder="e.g. Augusta National" className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 mt-1 text-white" />
+                                <label className="text-xs text-gray-500 uppercase tracking-widest font-bold">Home Golf Club</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. Augusta National" 
+                                    value={formData.golf_club} 
+                                    onChange={(e) => setFormData({...formData, golf_club: e.target.value})}
+                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 mt-1 text-white focus:border-accent/50 outline-none transition-colors" 
+                                />
                             </div>
                         </div>
                         <div className="pt-4 border-t border-white/10 text-right">
-                            <button className="px-4 py-2 bg-white text-black font-medium text-sm rounded-lg hover:bg-gray-200">Save Changes</button>
+                            <button 
+                                onClick={handleSave} 
+                                disabled={isSaving}
+                                className={`px-6 py-2.5 bg-white text-black font-bold text-sm rounded-lg hover:bg-gray-200 transition-all ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isSaving ? 'Saving...' : 'Save Changes'}
+                            </button>
                         </div>
                     </div>
                 </div>

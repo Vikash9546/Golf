@@ -104,3 +104,22 @@ export const getUsers = async (req, res) => {
         res.status(500).json({ message: 'Error fetching users', error: error.message });
     }
 };
+// @desc    Update user profile
+// @route   PATCH /api/auth/profile
+// @access  Protected
+export const updateProfile = async (req, res) => {
+    const { first_name, last_name, golf_club } = req.body;
+    try {
+        const { data: updatedUser, error } = await supabase
+            .from('users')
+            .update({ first_name, last_name, golf_club })
+            .eq('id', req.user.id)
+            .select('id, email, role, subscription_status, first_name, last_name, golf_club')
+            .single();
+
+        if (error) throw error;
+        res.status(200).json(updatedUser);
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating profile', error: error.message });
+    }
+};
