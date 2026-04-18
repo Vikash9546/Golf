@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Shield, Activity, Coins, Heart, PlusCircle, ArrowRight, 
   CreditCard, LayoutDashboard, Settings, Crown, BarChart3, CheckCircle2, Zap,
-  Users, LogIn, Trophy, Compass, ArrowUpRight, PlayCircle, Globe, FileText, Lock, Building, Bell, ArrowLeft, PenTool, Check, Upload, Trash2
+  Users, LogIn, Trophy, Compass, ArrowUpRight, PlayCircle, Globe, FileText, Lock, Building, Bell, ArrowLeft, PenTool, Check, Upload, Trash2, ExternalLink
 } from 'lucide-react';
 
 // Global Authenticated API Interceptor
@@ -70,6 +70,17 @@ const App = () => {
       console.error("Failed to fetch scores:", error);
     }
   };
+
+  useEffect(() => {
+    // Load Razorpay Checkout Script for premium payments
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   useEffect(() => {
     if (role === 'SUBSCRIBER' || role === 'ADMIN') {
@@ -193,7 +204,7 @@ const App = () => {
          {/* Subscriber Views */}
          {role === 'SUBSCRIBER' && activeTab === 'dashboard' && <DashboardView scores={scores} isSubscribed={isSubscribed} onSubscribe={() => setActiveTab('subscription')} />}
          {role === 'SUBSCRIBER' && activeTab === 'scores' && <ScoreEntryView scores={scores} setScores={setScores} refreshScores={fetchScores} isSubscribed={isSubscribed} onSubscribe={() => setActiveTab('subscription')} />}
-         {role === 'SUBSCRIBER' && activeTab === 'subscription' && <SubscriptionView isSubscribed={isSubscribed} onRefreshStatus={fetchScores} />}
+         {role === 'SUBSCRIBER' && activeTab === 'subscription' && <SubscriptionView isSubscribed={isSubscribed} onRefreshStatus={fetchScores} user={user} />}
          {role === 'SUBSCRIBER' && activeTab === 'charity' && <CharityView />}
          {role === 'SUBSCRIBER' && activeTab === 'profile' && <ProfileSettingsView user={user} setUser={setUser} />}
          
@@ -790,21 +801,47 @@ const ProfileSettingsView = ({ user, setUser }) => {
     );
 };
 
-const SubscriptionView = ({ isSubscribed, onRefreshStatus }) => {
+const SubscriptionView = ({ isSubscribed, onRefreshStatus, user }) => {
     const [isActivating, setIsActivating] = React.useState(false);
 
     const handleActivate = async () => {
         setIsActivating(true);
         try {
-            const response = await fetchWithAuth('http://localhost:5001/api/subscription/activate', {
-                method: 'POST'
+            // 1. Create Subscription on our Backend
+            const response = await fetchWithAuth('http://localhost:5001/api/billing/create-subscription', {
+                method: 'POST',
+                body: JSON.stringify({ plan_type: 'yearly' })
             });
-            if (response.ok) {
-                alert('Payment Simulated: You are now an ACTIVE hero!');
-                onRefreshStatus(); // This will update the isSubscribed state globally
-            }
+            
+            if (!response.ok) throw new Error('Failed to create subscription order');
+            const data = await response.json();
+
+            // 2. Open Razorpay Checkout Modal
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YourKeyHere', // Pass from Vite env
+                subscription_id: data.subscription_id,
+                name: 'Digital Heroes',
+                description: 'Annual Golf Rewards Membership',
+                image: 'https://digital-heroes.vercel.app/logo.png',
+                handler: function (response) {
+                    // Successful Payment Handling
+                    alert(`Payment Successful! ID: ${response.razorpay_payment_id}`);
+                    onRefreshStatus(); // Fetch fresh scores/status
+                },
+                prefill: {
+                    name: user ? `${user.first_name || ''} ${user.last_name || ''}` : '',
+                    email: user?.email || '',
+                },
+                theme: {
+                    color: '#D4AF37'
+                }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.open();
         } catch (error) {
-            alert('Simulation failed.');
+            console.error('Payment Error:', error);
+            alert('Could not initialize payment gateway. Check your API settings.');
         } finally {
             setIsActivating(false);
         }
