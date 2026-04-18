@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Shield, Activity, Coins, Heart, PlusCircle, ArrowRight, 
   CreditCard, LayoutDashboard, Settings, Crown, BarChart3, CheckCircle2, Zap,
-  Users, LogIn, Trophy, Compass, ArrowUpRight, PlayCircle, Globe, FileText, Lock, Building, Bell, ArrowLeft, PenTool, Check, Upload
+  Users, LogIn, Trophy, Compass, ArrowUpRight, PlayCircle, Globe, FileText, Lock, Building, Bell, ArrowLeft, PenTool, Check, Upload, Trash2
 } from 'lucide-react';
 
 // Global Authenticated API Interceptor
