@@ -653,6 +653,7 @@ const ScoreEntryView = ({ scores, setScores, refreshScores }) => {
                         ))
                     )}
                 </div>
+            </div>
         </div>
     );
 };
