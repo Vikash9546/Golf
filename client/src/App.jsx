@@ -54,6 +54,7 @@ const App = () => {
   });
   const [activeTab, setActiveTab] = useState('dashboard');
   const [scores, setScores] = useState([]);
+  const [isSubscribed, setIsSubscribed] = useState(true); // Default true, update on API fail
 
   const fetchScores = async () => {
     try {
@@ -61,6 +62,9 @@ const App = () => {
       if (response.ok) {
         const data = await response.json();
         setScores(data);
+        setIsSubscribed(true);
+      } else if (response.status === 403) {
+        setIsSubscribed(false);
       }
     } catch (error) {
       console.error("Failed to fetch scores:", error);
@@ -187,8 +191,8 @@ const App = () => {
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 p-6 md:p-10 overflow-y-auto w-full relative">
          {/* Subscriber Views */}
-         {role === 'SUBSCRIBER' && activeTab === 'dashboard' && <DashboardView scores={scores} />}
-         {role === 'SUBSCRIBER' && activeTab === 'scores' && <ScoreEntryView scores={scores} setScores={setScores} refreshScores={fetchScores} />}
+         {role === 'SUBSCRIBER' && activeTab === 'dashboard' && <DashboardView scores={scores} isSubscribed={isSubscribed} onSubscribe={() => setActiveTab('subscription')} />}
+         {role === 'SUBSCRIBER' && activeTab === 'scores' && <ScoreEntryView scores={scores} setScores={setScores} refreshScores={fetchScores} isSubscribed={isSubscribed} onSubscribe={() => setActiveTab('subscription')} />}
          {role === 'SUBSCRIBER' && activeTab === 'subscription' && <SubscriptionView />}
          {role === 'SUBSCRIBER' && activeTab === 'charity' && <CharityView />}
          {role === 'SUBSCRIBER' && activeTab === 'profile' && <ProfileSettingsView user={user} setUser={setUser} />}
@@ -419,12 +423,25 @@ const PublicVisitorView = ({ setRole, isLoggedIn = false, user, scores = [], onB
 // B. SUBSCRIBER VIEWS
 // ==========================================
 
-const DashboardView = ({ scores }) => {
+const DashboardView = ({ scores, isSubscribed, onSubscribe }) => {
     // PRD: PENDING_PROOF initially implies the user just won > $1k and needs to upload proof
     const [verificationStatus, setVerificationStatus] = React.useState('PENDING_PROOF');
 
     return (
-        <div className="max-w-5xl space-y-8 animate-in fade-in zoom-in-95 duration-500">
+        <div className="max-w-5xl space-y-8 animate-in fade-in zoom-in-95 duration-500 relative">
+            {!isSubscribed && (
+                <div className="absolute inset-0 z-50 backdrop-blur-sm bg-black/40 flex items-center justify-center rounded-3xl border border-white/5">
+                    <div className="glass-panel p-10 max-w-md text-center shadow-2xl border-accent/20">
+                        <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Lock className="text-accent" size={32} />
+                        </div>
+                        <h3 className="text-2xl font-premium font-bold text-white mb-2">Subscription Required</h3>
+                        <p className="text-gray-400 mb-8">Access to live ticket pools and score logging requires an active annual pass.</p>
+                        <button onClick={onSubscribe} className="btn-premium-gold w-full py-4 uppercase tracking-widest text-xs font-bold">Activate Now</button>
+                    </div>
+                </div>
+            )}
+
             <header className="flex justify-between items-center mb-10">
                 <div>
                     <h2 className="text-3xl font-premium font-bold text-white">My Dashboard</h2>
@@ -535,7 +552,7 @@ const DashboardView = ({ scores }) => {
     );
 };
 
-const ScoreEntryView = ({ scores, setScores, refreshScores }) => {
+const ScoreEntryView = ({ scores, setScores, refreshScores, isSubscribed, onSubscribe }) => {
     const [score, setScore] = React.useState('');
     const [date, setDate] = React.useState('');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -596,7 +613,20 @@ const ScoreEntryView = ({ scores, setScores, refreshScores }) => {
     }
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+            {!isSubscribed && (
+                <div className="absolute inset-0 z-50 backdrop-blur-sm bg-black/40 flex items-center justify-center rounded-3xl border border-white/5">
+                    <div className="glass-panel p-10 max-w-md text-center shadow-2xl border-accent/20">
+                        <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Crown className="text-accent" size={40} />
+                        </div>
+                        <h3 className="text-2xl font-premium font-bold text-white mb-2">Unlock Score Logging</h3>
+                        <p className="text-gray-400 mb-8">Your account must be activated to join the rolling 5 pool and become eligible for draws.</p>
+                        <button onClick={onSubscribe} className="btn-premium-gold w-full py-4 uppercase tracking-widest text-xs font-bold">Upgrade Account</button>
+                    </div>
+                </div>
+            )}
+
             <div className="text-center mb-10 pt-10">
                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
                     <Activity className="text-accent" size={28} />
