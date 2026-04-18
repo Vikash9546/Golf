@@ -53,13 +53,25 @@ const App = () => {
     } catch(e) { return null; }
   });
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [mockScores, setMockScores] = useState([
-      { points: 42, date: '2026-04-10' },
-      { points: 38, date: '2026-04-03' },
-      { points: 45, date: '2026-03-28' },
-      { points: 40, date: '2026-03-20' },
-      { points: 39, date: '2026-03-12' }
-  ]);
+  const [scores, setScores] = useState([]);
+
+  const fetchScores = async () => {
+    try {
+      const response = await fetchWithAuth('http://localhost:5001/api/scores');
+      if (response.ok) {
+        const data = await response.json();
+        setScores(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch scores:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (role === 'SUBSCRIBER' || role === 'ADMIN') {
+      fetchScores();
+    }
+  }, [role]);
   
   // Reset tab on role change to ensure valid state
   useEffect(() => {
@@ -72,12 +84,12 @@ const App = () => {
 
   // Logged-in user wants to view the landing page
   if (showLanding) {
-    return <PublicVisitorView setRole={setRole} isLoggedIn={true} user={user} onBackToDashboard={() => setShowLanding(false)} />;
+    return <PublicVisitorView setRole={setRole} isLoggedIn={true} user={user} scores={scores} onBackToDashboard={() => setShowLanding(false)} />;
   }
 
   // View Routing Logic based on Role
   if (role === 'VISITOR') {
-    return <PublicVisitorView setRole={setRole} isLoggedIn={false} user={null} />;
+    return <PublicVisitorView setRole={setRole} isLoggedIn={false} user={null} scores={[]} />;
   }
 
   if (role === 'LOGIN' || role === 'SIGNUP') {
@@ -175,8 +187,8 @@ const App = () => {
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 p-6 md:p-10 overflow-y-auto w-full relative">
          {/* Subscriber Views */}
-         {role === 'SUBSCRIBER' && activeTab === 'dashboard' && <DashboardView scores={mockScores} />}
-         {role === 'SUBSCRIBER' && activeTab === 'scores' && <ScoreEntryView scores={mockScores} setScores={setMockScores} />}
+         {role === 'SUBSCRIBER' && activeTab === 'dashboard' && <DashboardView scores={scores} />}
+         {role === 'SUBSCRIBER' && activeTab === 'scores' && <ScoreEntryView scores={scores} setScores={setScores} refreshScores={fetchScores} />}
          {role === 'SUBSCRIBER' && activeTab === 'subscription' && <SubscriptionView />}
          {role === 'SUBSCRIBER' && activeTab === 'charity' && <CharityView />}
          {role === 'SUBSCRIBER' && activeTab === 'profile' && <ProfileSettingsView user={user} setUser={setUser} />}
@@ -195,7 +207,7 @@ const App = () => {
 // ==========================================
 // A. PUBLIC VISITOR VIEW
 // ==========================================
-const PublicVisitorView = ({ setRole, isLoggedIn = false, user, onBackToDashboard }) => {
+const PublicVisitorView = ({ setRole, isLoggedIn = false, user, scores = [], onBackToDashboard }) => {
     const scrollToSection = (id) => {
         document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -297,11 +309,21 @@ const PublicVisitorView = ({ setRole, isLoggedIn = false, user, onBackToDashboar
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-5 gap-3">
-                                    {[42,39,36,44,40].map((s,i) => (
-                                        <div key={i} className="aspect-square bg-gradient-to-b from-white/10 to-transparent border border-white/5 rounded-2xl flex items-center justify-center font-premium text-2xl font-bold text-white shadow-xl">
-                                            {s}
-                                        </div>
-                                    ))}
+                                    {[0, 1, 2, 3, 4].map((i) => {
+                                        const scoreEntry = scores && scores[i];
+                                        return (
+                                            <div key={i} className="aspect-square bg-gradient-to-b from-white/10 to-transparent border border-white/5 rounded-2xl flex flex-col items-center justify-center font-premium shadow-xl transition-all hover:border-accent/40 group/num overflow-hidden relative">
+                                                {scoreEntry ? (
+                                                    <>
+                                                        <span className="text-2xl font-bold text-white group-hover/num:scale-110 transition-transform">{scoreEntry.stableford_score}</span>
+                                                        <span className="text-[7px] text-accent/60 absolute bottom-2 font-bold uppercase tracking-tighter">Pos {i+1}</span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-xl font-bold text-white/20">--</span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                                 <div className="mt-6 flex items-center justify-between text-[10px] text-gray-500 font-medium uppercase tracking-widest">
                                     <span>Ticket ID: DH-2026-XP</span>
@@ -426,13 +448,22 @@ const DashboardView = ({ scores }) => {
                             <p className="text-gray-400 text-sm mb-6">Your rolling 5 latest Stableford scores.</p>
                         </div>
                         <div className="grid grid-cols-5 gap-3">
-                            {scores.map((scoreObj, index) => (
-                                <div key={index} className="flex flex-col items-center justify-center py-5 bg-black/40 border border-white/5 rounded-xl hover:border-accent/40 hover:bg-black/80 transition-all relative">
-                                    <span className="absolute top-2 right-2 text-[8px] text-gray-500">{new Date(scoreObj.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})}</span>
-                                    <span className="text-gray-600 text-[10px] tracking-widest mb-1 mt-2">POS 0{index + 1}</span>
-                                    <span className="text-3xl font-premium font-bold bg-gradient-to-br from-white to-gray-400 bg-clip-text text-transparent">{scoreObj.points}</span>
-                                </div>
-                            ))}
+                            {[0, 1, 2, 3, 4].map((i) => {
+                                const scoreObj = scores && scores[i];
+                                return (
+                                    <div key={i} className="flex flex-col items-center justify-center py-5 bg-black/40 border border-white/5 rounded-xl hover:border-accent/40 hover:bg-black/80 transition-all relative">
+                                        {scoreObj ? (
+                                            <>
+                                                <span className="absolute top-2 right-2 text-[8px] text-gray-500">{new Date(scoreObj.played_at).toLocaleDateString(undefined, {month:'short', day:'numeric'})}</span>
+                                                <span className="text-gray-600 text-[10px] tracking-widest mb-1 mt-2">POS 0{i + 1}</span>
+                                                <span className="text-3xl font-premium font-bold bg-gradient-to-br from-white to-gray-400 bg-clip-text text-transparent">{scoreObj.stableford_score}</span>
+                                            </>
+                                        ) : (
+                                            <span className="text-2xl font-premium font-bold text-white/10">--</span>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -504,46 +535,64 @@ const DashboardView = ({ scores }) => {
     );
 };
 
-const ScoreEntryView = ({ scores, setScores }) => {
+const ScoreEntryView = ({ scores, setScores, refreshScores }) => {
     const [score, setScore] = React.useState('');
     const [date, setDate] = React.useState('');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [editingId, setEditingId] = React.useState(null);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
-        setTimeout(() => {
-            // PRD: Only one score entry permitted per date. Duplicate scores for same date not allowed
-            const existingIndex = scores.findIndex(s => s.date === date);
-            if (existingIndex !== -1) {
-                alert(`Error: A score for ${date} already exists. You may only edit or delete it below.`);
-                setIsSubmitting(false);
-                return;
-            }
-
-            const newScore = { points: parseInt(score, 10), date: date };
-            let updatedScores = [newScore, ...scores];
-            updatedScores.sort((a, b) => new Date(b.date) - new Date(a.date));
-            if (updatedScores.length > 5) {
-                updatedScores = updatedScores.slice(0, 5);
-            }
-            setScores(updatedScores);
+        
+        try {
+            const url = editingId ? `http://localhost:5001/api/scores/${editingId}` : 'http://localhost:5001/api/scores';
+            const method = editingId ? 'PUT' : 'POST';
             
-            alert(`Success: Score of ${score} logged! Ticket updated chronologically.`);
+            const response = await fetchWithAuth(url, {
+                method,
+                body: JSON.stringify({
+                    stableford_score: parseInt(score, 10),
+                    played_at: date
+                })
+            });
+
+            if (response.ok) {
+                alert(`Success: Score of ${score} ${editingId ? 'updated' : 'logged'}!`);
+                setScore('');
+                setDate('');
+                setEditingId(null);
+                refreshScores(); // Trigger re-fetch from API
+            } else {
+                const err = await response.json();
+                alert(`Error: ${err.message}`);
+            }
+        } catch (error) {
+            alert('Failed to sync score with server.');
+        } finally {
             setIsSubmitting(false);
-            setScore('');
-            setDate('');
-        }, 800);
+        }
     }
 
-    const handleDelete = (dateToDelete) => {
-        setScores(scores.filter(s => s.date !== dateToDelete));
+    const handleDelete = async (id) => {
+        if (!confirm('Are you sure you want to delete this score?')) return;
+        try {
+            const response = await fetchWithAuth(`http://localhost:5001/api/scores/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                refreshScores();
+            }
+        } catch (error) {
+            alert('Delete failed.');
+        }
     }
 
     const handleEdit = (scoreObj) => {
-        setScore(scoreObj.points.toString());
-        setDate(scoreObj.date);
-        handleDelete(scoreObj.date); // Temporarily remove it from log to be re-saved
+        setEditingId(scoreObj.id);
+        setScore(scoreObj.stableford_score.toString());
+        setDate(scoreObj.played_at);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     return (
@@ -552,7 +601,7 @@ const ScoreEntryView = ({ scores, setScores }) => {
                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
                     <Activity className="text-accent" size={28} />
                 </div>
-                <h2 className="text-3xl font-premium font-bold text-white mb-3">Enter Golf Score</h2>
+                <h2 className="text-3xl font-premium font-bold text-white mb-3">{editingId ? 'Edit Score' : 'Enter Golf Score'}</h2>
                 <p className="text-gray-400">Only authorized Stableford scores.</p>
             </div>
             <div className="glass-panel p-8">
@@ -569,31 +618,41 @@ const ScoreEntryView = ({ scores, setScores }) => {
                         <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} 
                           className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white outline-none focus:border-accent transition-all" />
                     </div>
-                    <button type="submit" disabled={isSubmitting} className="btn-premium-black w-full mt-4 h-14 text-lg disabled:opacity-50">
-                        {isSubmitting ? 'Syncing securely...' : 'Submit Score \u2192'}
-                    </button>
+                    <div className="flex gap-4">
+                        {editingId && (
+                            <button type="button" onClick={() => { setEditingId(null); setScore(''); setDate(''); }} className="flex-1 px-4 py-2 bg-white/5 text-white rounded-xl border border-white/10 hover:bg-white/10">Cancel</button>
+                        )}
+                        <button type="submit" disabled={isSubmitting} className="btn-premium-black flex-1 h-14 text-lg disabled:opacity-50">
+                            {isSubmitting ? 'Syncing securely...' : (editingId ? 'Update Score' : 'Submit Score \u2192')}
+                        </button>
+                    </div>
                 </form>
             </div>
 
-            {/* Score Edit/Delete Interface requirement per PRD */}
+            {/* Participation Log */}
             <div className="glass-panel p-8">
                 <h3 className="text-xl font-bold text-white mb-6 border-b border-white/10 pb-4">Manage Logged Scores</h3>
-                <div className="space-y-2">
-                    {scores.map((s, i) => (
-                        <div key={i} className="flex justify-between items-center p-4 bg-black/40 border border-white/5 rounded-xl hover:border-white/20 transition-all">
-                            <div className="flex items-center gap-4">
-                                <div className="text-2xl font-premium font-bold text-accent">{s.points} PTS</div>
-                                <div className="text-sm text-gray-400">{new Date(s.date).toLocaleDateString(undefined, {weekday:'short', year:'numeric', month:'short', day:'numeric'})}</div>
+                <div className="space-y-4">
+                    {scores.length === 0 ? (
+                        <p className="text-center text-gray-500 py-10">No scores logged yet. Start playing!</p>
+                    ) : (
+                        scores.map((s, i) => (
+                            <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 group hover:border-accent/20 transition-all">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-black/50 rounded-lg flex items-center justify-center text-accent font-bold text-xl">{s.stableford_score}</div>
+                                    <div>
+                                        <div className="text-white font-medium">{new Date(s.played_at).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest">Stableford Entry</div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleEdit(s)} className="p-2 text-gray-400 hover:text-white transition-colors" title="Edit"><PenTool size={16}/></button>
+                                    <button onClick={() => handleDelete(s.id)} className="p-2 text-gray-400 hover:text-red-400 transition-colors" title="Delete"><Trash2 size={16}/></button>
+                                </div>
                             </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => handleEdit(s)} className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Edit Entry"><PenTool size={14}/></button>
-                                <button onClick={() => handleDelete(s.date)} className="p-2 bg-red-500/10 hover:bg-red-500 hover:text-white rounded-lg text-red-500 transition-colors" title="Delete Entry"><span className="text-xs font-bold leading-none">X</span></button>
-                            </div>
-                        </div>
-                    ))}
-                    {scores.length === 0 && <p className="text-gray-500 text-center py-4">No scores logged.</p>}
+                        ))
+                    )}
                 </div>
-            </div>
         </div>
     );
 };
