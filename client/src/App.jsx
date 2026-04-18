@@ -201,8 +201,13 @@ const PublicVisitorView = ({ setRole, isLoggedIn = false, user, onBackToDashboar
     };
 
     // Derived User display data
-    const displayName = user?.email ? user.email.split('@')[0].replace(/[^a-zA-Z]/g, ' ') : 'John Doe';
-    const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+    const displayName = user?.first_name && user?.last_name 
+        ? `${user.first_name} ${user.last_name}` 
+        : user?.email ? user.email.split('@')[0].replace(/[^a-zA-Z]/g, ' ') : 'Visitor';
+        
+    const initials = user?.first_name && user?.last_name
+        ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() :
+        displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
 
     return (
         <div className="min-h-screen bg-primary text-gray-100 font-sans selection:bg-accent selection:text-black">
@@ -223,7 +228,7 @@ const PublicVisitorView = ({ setRole, isLoggedIn = false, user, onBackToDashboar
                     <div className="flex gap-4 items-center">
                         {isLoggedIn ? (
                             <div className="flex items-center gap-4">
-                                <span className="text-xs text-gray-400 hidden lg:block">Welcome, <span className="text-white font-bold">{displayName}</span></span>
+                                <span className="text-xs text-gray-400 hidden lg:block font-bold tracking-tight uppercase">Dashboard Mode: <span className="text-accent">{displayName}</span></span>
                                 <button onClick={onBackToDashboard} className="px-5 py-2.5 rounded-full bg-accent/20 hover:bg-accent/30 text-accent text-sm font-medium transition-all border border-accent/30 flex items-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.1)]">
                                     <ArrowLeft size={16} /> Back to Dashboard
                                 </button>
@@ -248,9 +253,9 @@ const PublicVisitorView = ({ setRole, isLoggedIn = false, user, onBackToDashboar
             {/* Hero (Platform Concept) */}
             <section id="concept" className="pt-40 pb-20 px-6 min-h-[90vh] flex items-center relative overflow-hidden">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-accent/10 rounded-full blur-[120px] pointer-events-none"></div>
-                <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center relative z-10">
-                    <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-accent text-sm font-medium mb-6">
+                <div className={`max-w-7xl mx-auto grid ${isLoggedIn ? 'md:grid-cols-2' : 'grid-cols-1 text-center'} gap-16 items-center relative z-10`}>
+                    <div className={!isLoggedIn ? 'max-w-3xl mx-auto' : ''}>
+                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-accent text-sm font-medium mb-6 ${!isLoggedIn ? 'mx-auto' : ''}`}>
                             <Shield size={14} /> The Future of Philanthropic Rewards
                         </div>
                         <h2 className="text-5xl md:text-7xl font-premium font-bold leading-tight mb-6">
@@ -258,51 +263,53 @@ const PublicVisitorView = ({ setRole, isLoggedIn = false, user, onBackToDashboar
                             <span className="text-gradient-gold">Win Big.</span> <br />
                             Change the World.
                         </h2>
-                        <p className="text-lg text-gray-400 mb-8 max-w-lg leading-relaxed">
+                        <p className={`text-lg text-gray-400 mb-8 max-w-lg leading-relaxed ${!isLoggedIn ? 'mx-auto' : ''}`}>
                             Transform your scorecards into digital draw tickets. Participate in massive monthly global draws, climb the rankings, and systematically fund vetted charities across the planet.
                         </p>
-                        <div className="flex gap-4">
+                        <div className={`flex gap-4 ${!isLoggedIn ? 'justify-center' : ''}`}>
                             {!isLoggedIn && (
                                 <button onClick={() => setRole('SIGNUP')} className="btn-premium-black relative overflow-hidden group shadow-[0_0_40px_rgba(212,175,55,0.2)] hover:shadow-[0_0_60px_rgba(212,175,55,0.4)]">
-                                    <span className="relative z-10 flex items-center gap-2">Subscribe & Empower Now <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" /></span>
+                                    <span className="relative z-10 flex items-center gap-2 font-bold uppercase tracking-widest text-xs">Join the Platform <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" /></span>
                                     <div className="absolute inset-0 bg-accent/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                                 </button>
                             )}
-                            <button className="btn-gold-outline flex items-center gap-2">
+                            <button className="btn-gold-outline flex items-center gap-2 px-6">
                                 <PlayCircle size={18} /> Our Mission
                             </button>
                         </div>
                     </div>
-                    <div className="relative hidden md:block">
-                        <div className="glass-panel p-8 transform rotate-1 hover:rotate-0 transition-transform duration-500 relative z-20 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                            <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-accent to-accent/20 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-inner">{initials}</div>
-                                    <div>
-                                        <div className="text-white font-premium font-bold capitalize">{displayName}</div>
-                                        <div className={`text-[10px] font-bold uppercase tracking-wider ${isLoggedIn ? 'text-green-400' : 'text-gray-500'}`}>
-                                            {isLoggedIn ? 'Live Platform Ticket' : 'Interactive Mockup'}
+                    {isLoggedIn && (
+                        <div className="relative hidden md:block animate-in slide-in-from-right duration-700">
+                            <div className="glass-panel p-8 transform rotate-1 hover:rotate-0 transition-transform duration-500 relative z-20 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                                <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-gradient-to-br from-accent to-accent/20 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-inner">{initials}</div>
+                                        <div>
+                                            <div className="text-white font-premium font-bold capitalize">{displayName}</div>
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-green-400">
+                                                Live Platform Ticket
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-[10px] text-gray-500 uppercase tracking-widest">Est. Jackpot</div>
-                                    <div className="text-accent font-bold text-2xl tracking-tight">$1.2M</div>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-5 gap-3">
-                                {[42,39,36,44,40].map((s,i) => (
-                                    <div key={i} className="aspect-square bg-gradient-to-b from-white/10 to-transparent border border-white/5 rounded-2xl flex items-center justify-center font-premium text-2xl font-bold text-white shadow-xl">
-                                        {s}
+                                    <div className="text-right">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest">Est. Jackpot</div>
+                                        <div className="text-accent font-bold text-2xl tracking-tight">$1.2M</div>
                                     </div>
-                                ))}
-                            </div>
-                            <div className="mt-6 flex items-center justify-between text-[10px] text-gray-500 font-medium uppercase tracking-widest">
-                                <span>Ticket ID: DH-2026-XP</span>
-                                <span className={isLoggedIn ? 'text-accent' : ''}>Verified Status ✅</span>
+                                </div>
+                                <div className="grid grid-cols-5 gap-3">
+                                    {[42,39,36,44,40].map((s,i) => (
+                                        <div key={i} className="aspect-square bg-gradient-to-b from-white/10 to-transparent border border-white/5 rounded-2xl flex items-center justify-center font-premium text-2xl font-bold text-white shadow-xl">
+                                            {s}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-6 flex items-center justify-between text-[10px] text-gray-500 font-medium uppercase tracking-widest">
+                                    <span>Ticket ID: DH-2026-XP</span>
+                                    <span className="text-accent">Verified Status ✅</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </section>
 

@@ -1,3 +1,4 @@
+import express from 'express';
 import { registerUser, loginUser, getUsers, updateProfile } from '../controllers/authController.js';
 import { protect, admin } from '../middlewares/authMiddleware.js';
 
