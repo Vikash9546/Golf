@@ -8,9 +8,7 @@ export const activateSubscription = async (req, res) => {
         const { data: updatedUser, error } = await supabase
             .from('users')
             .update({ 
-                subscription_status: 'ACTIVE',
-                // Optional: set a renewal date 1 year from now
-                updated_at: new Date()
+                subscription_status: 'ACTIVE'
             })
             .eq('id', req.user.id)
             .select()
