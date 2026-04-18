@@ -193,7 +193,7 @@ const App = () => {
          {/* Subscriber Views */}
          {role === 'SUBSCRIBER' && activeTab === 'dashboard' && <DashboardView scores={scores} isSubscribed={isSubscribed} onSubscribe={() => setActiveTab('subscription')} />}
          {role === 'SUBSCRIBER' && activeTab === 'scores' && <ScoreEntryView scores={scores} setScores={setScores} refreshScores={fetchScores} isSubscribed={isSubscribed} onSubscribe={() => setActiveTab('subscription')} />}
-         {role === 'SUBSCRIBER' && activeTab === 'subscription' && <SubscriptionView />}
+         {role === 'SUBSCRIBER' && activeTab === 'subscription' && <SubscriptionView isSubscribed={isSubscribed} onRefreshStatus={fetchScores} />}
          {role === 'SUBSCRIBER' && activeTab === 'charity' && <CharityView />}
          {role === 'SUBSCRIBER' && activeTab === 'profile' && <ProfileSettingsView user={user} setUser={setUser} />}
          
@@ -790,7 +790,26 @@ const ProfileSettingsView = ({ user, setUser }) => {
     );
 };
 
-const SubscriptionView = () => {
+const SubscriptionView = ({ isSubscribed, onRefreshStatus }) => {
+    const [isActivating, setIsActivating] = React.useState(false);
+
+    const handleActivate = async () => {
+        setIsActivating(true);
+        try {
+            const response = await fetchWithAuth('http://localhost:5001/api/subscription/activate', {
+                method: 'POST'
+            });
+            if (response.ok) {
+                alert('Payment Simulated: You are now an ACTIVE hero!');
+                onRefreshStatus(); // This will update the isSubscribed state globally
+            }
+        } catch (error) {
+            alert('Simulation failed.');
+        } finally {
+            setIsActivating(false);
+        }
+    };
+
     return (
         <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-500">
             <div className="text-center mb-12">
@@ -799,7 +818,7 @@ const SubscriptionView = () => {
             </div>
             <div className="grid md:grid-cols-2 gap-8">
                 <div className="glass-panel p-8 border-accent/50 relative overflow-hidden bg-gradient-to-b from-secondary/70 to-black/90 shadow-[0_0_30px_rgba(212,175,55,0.1)]">
-                    <div className="absolute top-0 right-0 bg-accent text-black text-xs font-bold px-3 py-1 rounded-bl-lg">CURRENT PLAN</div>
+                    {isSubscribed && <div className="absolute top-0 right-0 bg-accent text-black text-xs font-bold px-3 py-1 rounded-bl-lg">CURRENT PLAN</div>}
                     <h3 className="text-xl font-bold text-white mb-2">Annual Pass</h3>
                     <div className="text-4xl font-premium font-bold text-white mb-6">$99<span className="text-base text-gray-500 font-normal">/year</span></div>
                     <ul className="space-y-3 mb-8 text-sm text-gray-300">
@@ -807,28 +826,40 @@ const SubscriptionView = () => {
                         <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-accent"/> Guaranteed Draw Participation</li>
                         <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-accent"/> Charity Selection Unlock</li>
                     </ul>
-                    <button className="btn-premium-black w-full opacity-50 cursor-not-allowed">Active</button>
-                    <p className="text-xs text-center mt-4 text-gray-500">Renews Oct 24, 2026</p>
+                    
+                    {isSubscribed ? (
+                        <button className="btn-premium-black w-full opacity-50 cursor-not-allowed">Active</button>
+                    ) : (
+                        <button onClick={handleActivate} disabled={isActivating} className="btn-premium-gold w-full py-4 text-xs font-bold uppercase tracking-widest shadow-lg shadow-accent/20">
+                            {isActivating ? 'Processing Payment...' : 'Proceed to Payment \u2192'}
+                        </button>
+                    )}
+                    
+                    <p className="text-xs text-center mt-4 text-gray-500">{isSubscribed ? 'Renews Oct 24, 2026' : 'Immediate Access upon payment'}</p>
                 </div>
                 {/* Billing History Card */}
                 <div className="glass-panel p-8">
                     <h3 className="text-xl font-bold text-white mb-6">Billing History</h3>
                     <div className="space-y-4">
-                        {[
-                            { date: 'Oct 24, 2025', amt: '$99.00', status: 'Paid' },
-                            { date: 'Oct 24, 2024', amt: '$99.00', status: 'Paid' }
-                        ].map((bill, i) => (
-                            <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-white/5">
-                                <div>
-                                    <div className="text-sm text-white font-medium">Annual Pass</div>
-                                    <div className="text-xs text-gray-500">{bill.date}</div>
+                        {isSubscribed ? (
+                            [
+                                { date: 'Apr 18, 2026', amt: '$99.00', status: 'Paid' },
+                                { date: 'Apr 18, 2025', amt: '$99.00', status: 'Paid' }
+                            ].map((bill, i) => (
+                                <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-white/5">
+                                    <div>
+                                        <div className="text-sm text-white font-medium">Annual Pass</div>
+                                        <div className="text-xs text-gray-500">{bill.date}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-sm font-bold text-white">{bill.amt}</div>
+                                        <div className="text-xs text-green-400">{bill.status}</div>
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-sm font-bold text-white">{bill.amt}</div>
-                                    <div className="text-xs text-green-400">{bill.status}</div>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            <p className="text-center text-gray-500 py-10 italic">No history available.</p>
+                        )}
                     </div>
                 </div>
             </div>

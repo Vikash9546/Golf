@@ -12,6 +12,7 @@ import billingRoutes from './routes/billingRoutes.js';
 import scoreRoutes from './routes/scoreRoutes.js';
 import drawRoutes from './routes/drawRoutes.js';
 import charityRoutes from './routes/charityRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import { supabase } from './config/supabase.js';
 
 const app = express();
@@ -38,6 +39,7 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/scores', scoreRoutes);
 app.use('/api/draws', drawRoutes);
 app.use('/api/charity', charityRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 
 // Start Server
 app.listen(PORT, async () => {
