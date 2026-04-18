@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0A0A0A;
+  --color-secondary: #1A1A1A;
+  --color-accent: #D4AF37;
+  --color-darker: #000000;
+  --color-charity: #2E8B57;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-premium: 'Outfit', sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-primary);
+    color: #F3F4F6;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    background-image: radial-gradient(circle at top right, rgba(212, 175, 55, 0.05), transparent 40%),
+                      radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.02), transparent 40%);
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-secondary/70 backdrop-blur-xl border border-white/5 rounded-3xl shadow-2xl;
+  }
+  
+  .btn-premium-black {
+    @apply px-6 py-3 bg-black text-white font-medium rounded-xl border border-white/10 transition-all duration-500 ease-out flex items-center justify-center;
+    box-shadow: 0 4px 14px 0 rgba(0,0,0,0.39);
+  }
+  
+  .btn-premium-black:hover {
+    @apply border-white/30;
+    box-shadow: 0 0 20px rgba(255,255,255,0.1);
+  }
+  
+  .btn-gold-outline {
+    @apply px-6 py-3 bg-transparent text-accent font-medium rounded-xl border border-accent/50 transition-all duration-300 flex items-center justify-center;
+  }
+
+  .btn-gold-outline:hover {
+    @apply bg-accent/10;
+    box-shadow: 0 0 15px rgba(212,175,55,0.3);
+  }
+
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#D4AF37] to-[#FFF8DC];
+  }
+}
